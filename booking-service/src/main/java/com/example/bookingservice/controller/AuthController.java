@@ -1,13 +1,15 @@
 package com.example.bookingservice.controller;
 
+import com.example.bookingservice.dto.AuthRequestDto;
+import com.example.bookingservice.dto.AuthResponseDto;
+import com.example.bookingservice.dto.RegisterRequestDto;
 import com.example.bookingservice.entity.User;
 import com.example.bookingservice.security.JwtUtil;
 import com.example.bookingservice.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/user")
@@ -22,20 +24,23 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
+    // POST /user/register
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
-        User user = userService.createUser(body.get("username"), body.get("password"));
+    public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto request) {
+        User user = userService.createUser(request.getUsername(), request.getPassword());
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-        return ResponseEntity.ok(Map.of("token", token));
+        return ResponseEntity.ok(new AuthResponseDto(token));
     }
 
+    // POST /user/auth
     @PostMapping("/auth")
-    public ResponseEntity<?> auth(@RequestBody Map<String, String> body) {
-        // Простая проверка (в реальности AuthenticationManager)
-        User user = (User) userService.loadUserByUsername(body.get("username"));
-        if (passwordEncoder.matches(body.get("password"), user.getPassword())) {
+    public ResponseEntity<AuthResponseDto> auth(@Valid @RequestBody AuthRequestDto request) {
+        // Используем getUserEntity, чтобы получить сущность БД
+        User user = userService.getUserEntity(request.getUsername());
+
+        if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
-            return ResponseEntity.ok(Map.of("token", token));
+            return ResponseEntity.ok(new AuthResponseDto(token));
         }
         return ResponseEntity.status(401).build();
     }

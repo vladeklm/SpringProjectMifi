@@ -4,8 +4,13 @@ import com.example.bookingservice.dto.BookingRequestDto;
 import com.example.bookingservice.entity.Booking;
 import com.example.bookingservice.entity.Role;
 import com.example.bookingservice.entity.User;
+import com.example.bookingservice.repository.BookingRepository;
 import com.example.bookingservice.service.BookingService;
 import com.example.bookingservice.service.UserService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,12 +23,14 @@ import java.util.Optional;
 @RequestMapping("/api/bookings")
 public class BookingController {
     private final BookingService bookingService;
-    private final UserService userService; // 1. Внедряем UserService
+    private final UserService userService;
+    private final BookingRepository bookingRepository;
 
     // 2. Обновляем конструктор
-    public BookingController(BookingService bookingService, UserService userService) {
+    public BookingController(BookingService bookingService, UserService userService, BookingRepository bookingRepository) {
         this.bookingService = bookingService;
         this.userService = userService;
+        this.bookingRepository = bookingRepository;
     }
 
     @PostMapping
@@ -34,8 +41,14 @@ public class BookingController {
 
     // --- USER: История бронирований ---
     @GetMapping
-    public List<Booking> getMyBookings(Authentication auth) {
-        return bookingService.getMyBookings(auth.getName());
+    public Page<Booking> getMyBookings(
+            Authentication auth,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        User user = userService.getUserEntity(auth.getName());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return bookingRepository.findByUserId(user.getId(), pageable);
     }
 
     // --- USER: Получение конкретного бронирования ---

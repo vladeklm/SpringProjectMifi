@@ -10,9 +10,17 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
   h2:
     console:
       enabled: true
+  sleuth:
+    zipkin:
+      enabled: false
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg [%X{traceId},%X{spanId}]%n"
 
 eureka:
   client:

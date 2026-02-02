@@ -10,6 +10,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
+  sleuth:
+    zipkin:
+      enabled: false
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg [%X{traceId},%X{spanId}]%n"
 
 eureka:
   client:
@@ -17,4 +25,13 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 jwt:
-  secret: mySecretKeyForBookingService
+  secret: mySecretKeyForBookingServicemySecretKeyForBookingServicemySecretKeyForBookingServicemySecretKeyForBookingServicemySecretKeyForBookingService
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      hotelService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10000
+        permitted-number-of-calls-in-half-open-state: 5
