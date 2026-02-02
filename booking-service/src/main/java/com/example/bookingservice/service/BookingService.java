@@ -100,19 +100,29 @@ public class BookingService {
 
     private boolean tryConfirmAvailability(Long roomId, java.time.LocalDate start, java.time.LocalDate end, String requestId, String token) {
         try {
+            // Внутри tryConfirmAvailability, перед запросом:
+            System.out.println(">>> Booking Service calling confirmAvailability for roomId: " + roomId + " with token: " + (token != null ? "present" : "null"));
             return restClientBuilder.build()
                     .post()
                     .uri("lb://hotel-service/api/rooms/" + roomId + "/confirm-availability")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .header("Authorization", token) // ВАЖНО: Передаем токен
+                    .header("Authorization", token)
                     .body(new AvailabilityRequest(start, end, requestId))
                     .retrieve()
                     .body(Boolean.class);
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.CONFLICT) {
+
+        } catch (org.springframework.web.client.RestClientException e) {
+            // Ловим ВСЕ ошибки RestClient (включая ошибки конвертации)
+            System.err.println("Hotel Service call failed: " + e.getMessage());
+
+            // Если статус 409 (Conflict) в теле ответа (вместо HTTP статуса)
+            // или другая бизнес-ошибка, возвращаем false (отмена)
+            if (e.getMessage().contains("Conflict") || e.getMessage().contains("conflict")) {
                 return false;
             }
-            throw new RuntimeException(e);
+
+            // Если 5xx (ошибка сервера) или несоответствие типов -> считаем, что бронирование невозможно
+            return false;
         }
     }
 

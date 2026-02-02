@@ -48,10 +48,14 @@ public class RoomService {
 
     @Transactional
     public boolean confirmAvailability(Long roomId, LocalDate start, LocalDate end, String requestId) {
+        System.out.println(">>> Request to confirm Room: " + roomId + ", from " + start + " to " + end + ", reqId: " + requestId);
         if (lockRepository.findByRequestId(requestId).isPresent()) return true;
 
         boolean conflict = lockRepository.existsConflict(roomId, start, end, requestId);
-        if (conflict) throw new IllegalStateException("Room already booked");
+        if (conflict) {
+            System.out.println(">>> Conflict detected for Room: " + roomId);
+            return false;
+        }
 
         RoomLock lock = new RoomLock();
         lock.setRoomId(roomId);
@@ -64,6 +68,7 @@ public class RoomService {
             room.setTimesBooked(room.getTimesBooked() + 1);
             roomRepository.save(room);
         });
+        System.out.println(">>> Lock created for Room: " + roomId);
         return true;
     }
 

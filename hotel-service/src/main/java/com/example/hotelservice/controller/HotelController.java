@@ -35,10 +35,12 @@ public class HotelController {
 
 
     // Меняем возвращаемый тип с Void на Boolean
-    @PostMapping("/{id}/confirm-availability")
+    @PostMapping("/rooms/{id}/confirm-availability")
     public ResponseEntity<Boolean> confirmAvailability(@PathVariable Long id, @RequestBody AvailabilityRequest req) {
-        roomService.confirmAvailability(id, req.getStartDate(), req.getEndDate(), req.getRequestId());
-        // Явно возвращаем true в теле ответа
+        // Если в RoomService происходит ошибка, она вылетит сюда (500)
+        boolean result = roomService.confirmAvailability(id, req.getStartDate(), req.getEndDate(), req.getRequestId());
+
+        // Явно возвращаем true, если все ок
         return ResponseEntity.ok(true);
     }
 
