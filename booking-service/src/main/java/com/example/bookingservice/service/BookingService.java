@@ -5,6 +5,7 @@ import com.example.bookingservice.dto.BookingRequestDto;
 import com.example.bookingservice.dto.RoomDto;
 import com.example.bookingservice.entity.Booking;
 import com.example.bookingservice.entity.BookingStatus;
+import com.example.bookingservice.entity.Role;
 import com.example.bookingservice.entity.User;
 import com.example.bookingservice.repository.BookingRepository;
 import org.springframework.stereotype.Service;
@@ -102,5 +103,32 @@ public class BookingService {
 
     public Optional<Booking> findById(Long id) {
         return bookingRepository.findById(id);
+    }
+
+    @Transactional
+    public Booking cancelBooking(Long bookingId, String username) {
+        // Находим бронирование
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // Проверяем права (User может отменить только СВОЕ, Admin - любое)
+        User currentUser = userService.getUserEntity(username);
+        if (currentUser.getRole() != Role.ADMIN && !booking.getUserId().equals(currentUser.getId())) {
+            throw new RuntimeException("Access denied");
+        }
+
+        // Если уже отменено, ничего не делаем (идемпотентность)
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            return booking;
+        }
+
+        // Меняем статус
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+
+        // Компенсация: освобождаем номер в Hotel Service
+        releaseRoom(booking.getRoomId(), booking.getRequestId());
+
+        return booking;
     }
 }

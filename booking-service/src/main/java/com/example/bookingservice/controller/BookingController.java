@@ -63,4 +63,11 @@ public class BookingController {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
+
+    // DELETE /booking/{id} - отменить бронирование (USER)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long id, Authentication auth) {
+        bookingService.cancelBooking(id, auth.getName());
+        return ResponseEntity.ok().build();
+    }
 }

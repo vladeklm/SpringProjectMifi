@@ -45,4 +45,16 @@ public class Booking {
     public Long getUserId() {
         return userId;
     }
+
+    public BookingStatus getStatus() {
+        return status;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
 }

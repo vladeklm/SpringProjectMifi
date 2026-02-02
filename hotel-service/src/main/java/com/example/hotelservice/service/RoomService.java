@@ -86,4 +86,14 @@ public class RoomService {
                 .sorted(Comparator.comparingInt(Room::getTimesBooked))
                 .toList();
     }
+
+
+    public List<Room> getAllAvailableRooms(LocalDate start, LocalDate end) {
+        List<Room> allRooms = roomRepository.findAll();
+        return allRooms.stream()
+                .filter(Room::isAvailable)
+                // Проверяем отсутствие блокировок (т.е. номер свободен на эти даты)
+                .filter(room -> !lockRepository.existsConflict(room.getId(), start, end, "dummy-id"))
+                .toList();
+    }
 }

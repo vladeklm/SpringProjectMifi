@@ -58,4 +58,9 @@ public class HotelController {
         Room room = roomService.saveRoom(dto);
         return ResponseEntity.ok(room);
     }
+
+    @GetMapping("/rooms")
+    public List<Room> getAllAvailableRooms(@RequestParam java.time.LocalDate start, @RequestParam java.time.LocalDate end) {
+        return roomService.getAllAvailableRooms(start, end);
+    }
 }
