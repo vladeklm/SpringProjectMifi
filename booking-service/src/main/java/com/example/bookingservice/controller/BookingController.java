@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -26,7 +25,6 @@ public class BookingController {
     private final UserService userService;
     private final BookingRepository bookingRepository;
 
-    // 2. Обновляем конструктор
     public BookingController(BookingService bookingService, UserService userService, BookingRepository bookingRepository) {
         this.bookingService = bookingService;
         this.userService = userService;
@@ -34,8 +32,11 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<Booking> createBooking(@RequestBody BookingRequestDto dto, Authentication auth) {
-        Booking booking = bookingService.createBooking(dto, auth.getName());
+    public ResponseEntity<Booking> createBooking(
+            @RequestBody BookingRequestDto dto,
+            @RequestHeader("Authorization") String token, // Захватываем токен из заголовка
+            Authentication auth) {
+        Booking booking = bookingService.createBooking(dto, token, auth.getName());
         return ResponseEntity.ok(booking);
     }
 
@@ -54,7 +55,6 @@ public class BookingController {
     // --- USER: Получение конкретного бронирования ---
     @GetMapping("/{id}")
     public ResponseEntity<Booking> getBooking(@PathVariable Long id, Authentication auth) {
-        // 3. Реализуем проверку безопасности
         Optional<Booking> bookingOpt = bookingService.findById(id);
 
         if (bookingOpt.isEmpty()) {
@@ -62,14 +62,8 @@ public class BookingController {
         }
 
         Booking booking = bookingOpt.get();
-
-        // Получаем сущность текущего пользователя из токена
         User currentUser = userService.getUserEntity(auth.getName());
 
-        // ПРОВЕРКА:
-        // 1. Если пользователь Админ -> Доступ разрешен.
-        // 2. Если ID пользователя в бронировании совпадает с ID текущего пользователя -> Доступ разрешен.
-        // Иначе -> 403 Forbidden.
         if (currentUser.getRole() == Role.ADMIN || booking.getUserId().equals(currentUser.getId())) {
             return ResponseEntity.ok(booking);
         }
@@ -77,10 +71,13 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    // DELETE /booking/{id} - отменить бронирование (USER)
+    // --- USER: Отмена бронирования ---
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelBooking(@PathVariable Long id, Authentication auth) {
-        bookingService.cancelBooking(id, auth.getName());
+    public ResponseEntity<Void> cancelBooking(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token, // Захватываем токен из заголовка
+            Authentication auth) {
+        bookingService.cancelBooking(id, token, auth.getName());
         return ResponseEntity.ok().build();
     }
 }

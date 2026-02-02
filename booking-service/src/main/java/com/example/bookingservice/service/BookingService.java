@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +22,7 @@ import java.util.Optional;
 public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
-    private final RestClient.Builder restClientBuilder; // Меняем на RestClient
+    private final RestClient.Builder restClientBuilder;
 
     public BookingService(BookingRepository bookingRepository, UserService userService, RestClient.Builder restClientBuilder) {
         this.bookingRepository = bookingRepository;
@@ -31,14 +30,14 @@ public class BookingService {
         this.restClientBuilder = restClientBuilder;
     }
 
-    @Transactional// Стандартная Spring Retry аннотация
-    public Booking createBooking(BookingRequestDto dto, String username) {
+    @Transactional
+    public Booking createBooking(BookingRequestDto dto, String token, String username) {
         User user = userService.getUserEntity(username);
         String requestId = java.util.UUID.randomUUID().toString();
 
         Long targetRoomId = dto.getRoomId();
         if (dto.isAutoSelect()) {
-            targetRoomId = findBestRoom(dto.getStartDate(), dto.getEndDate());
+            targetRoomId = findBestRoom(dto.getStartDate(), dto.getEndDate(), token);
             if (targetRoomId == null) throw new RuntimeException("No rooms available");
         }
 
@@ -51,19 +50,19 @@ public class BookingService {
         booking.setRequestId(requestId);
         booking = bookingRepository.save(booking);
 
-        boolean confirmed = tryConfirmAvailability(targetRoomId, dto.getStartDate(), dto.getEndDate(), requestId);
+        boolean confirmed = tryConfirmAvailability(targetRoomId, dto.getStartDate(), dto.getEndDate(), requestId, token);
 
         if (confirmed) {
             booking.setStatus(BookingStatus.CONFIRMED);
         } else {
             booking.setStatus(BookingStatus.CANCELLED);
-            releaseRoom(targetRoomId, requestId);
+            releaseRoom(targetRoomId, requestId, token);
         }
         return bookingRepository.save(booking);
     }
 
     @Transactional
-    public Booking cancelBooking(Long bookingId, String username) {
+    public Booking cancelBooking(Long bookingId, String token, String username) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         User currentUser = userService.getUserEntity(username);
@@ -75,16 +74,22 @@ public class BookingService {
         }
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
-        releaseRoom(booking.getRoomId(), booking.getRequestId());
+
+        // Передаем токен при освобождении комнаты
+        releaseRoom(booking.getRoomId(), booking.getRequestId(), token);
         return booking;
     }
 
-    private Long findBestRoom(java.time.LocalDate start, java.time.LocalDate end) {
-        // RestClient очень простой:
+    public Optional<Booking> findById(Long id) {
+        return bookingRepository.findById(id);
+    }
+
+    private Long findBestRoom(java.time.LocalDate start, java.time.LocalDate end, String token) {
         return restClientBuilder.build()
                 .get()
                 .uri("lb://hotel-service/api/rooms/recommend?start={start}&end={end}", start, end)
                 .accept(MediaType.APPLICATION_JSON)
+                .header("Authorization", token) // ВАЖНО: Передаем токен
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<RoomDto>>() {})
                 .stream()
@@ -93,12 +98,13 @@ public class BookingService {
                 .orElse(null);
     }
 
-    private boolean tryConfirmAvailability(Long roomId, java.time.LocalDate start, java.time.LocalDate end, String requestId) {
+    private boolean tryConfirmAvailability(Long roomId, java.time.LocalDate start, java.time.LocalDate end, String requestId, String token) {
         try {
             return restClientBuilder.build()
                     .post()
                     .uri("lb://hotel-service/api/rooms/" + roomId + "/confirm-availability")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token) // ВАЖНО: Передаем токен
                     .body(new AvailabilityRequest(start, end, requestId))
                     .retrieve()
                     .body(Boolean.class);
@@ -110,21 +116,18 @@ public class BookingService {
         }
     }
 
-    private void releaseRoom(Long roomId, String requestId) {
+    private void releaseRoom(Long roomId, String requestId, String token) {
         try {
             restClientBuilder.build()
                     .post()
                     .uri("lb://hotel-service/api/rooms/" + roomId + "/release")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", token) // ВАЖНО: Передаем токен
                     .body(new AvailabilityRequest(null, null, requestId))
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception e) {
             System.err.println("Error during release: " + e.getMessage());
         }
-    }
-
-    public Optional<Booking> findById(Long id) {
-        return bookingRepository.findById(id);
     }
 }

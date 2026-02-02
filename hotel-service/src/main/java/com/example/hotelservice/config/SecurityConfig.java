@@ -32,6 +32,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
+                        .requestMatchers("/h2-console/**").permitAll()
+
                         // Разрешаем регистрацию и вход
                         .requestMatchers("/user/**").permitAll()
 
@@ -41,7 +43,12 @@ public class SecurityConfig {
                         // Всё остальное требует авторизации
                         .anyRequest().authenticated()
                 )
+                .headers(headers -> headers
+                        // ВАЖНО: Современный способ настройки frameOptions через лямбду
+                        // sameOrigin разрешает фреймы с того же источника
+                        .frameOptions(frame -> frame.disable()))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        http.csrf(csrf -> csrf.disable());
         return http.build();
     }
 }

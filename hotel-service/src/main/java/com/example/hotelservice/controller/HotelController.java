@@ -33,11 +33,13 @@ public class HotelController {
         return hotelRepository.findAll();
     }
 
-    // --- INTERNAL ---
-    @PostMapping("/rooms/{id}/confirm-availability")
-    public ResponseEntity<Void> confirmAvailability(@PathVariable Long id, @RequestBody AvailabilityRequest req) {
+
+    // Меняем возвращаемый тип с Void на Boolean
+    @PostMapping("/{id}/confirm-availability")
+    public ResponseEntity<Boolean> confirmAvailability(@PathVariable Long id, @RequestBody AvailabilityRequest req) {
         roomService.confirmAvailability(id, req.getStartDate(), req.getEndDate(), req.getRequestId());
-        return ResponseEntity.ok().build();
+        // Явно возвращаем true в теле ответа
+        return ResponseEntity.ok(true);
     }
 
     @PostMapping("/rooms/{id}/release")

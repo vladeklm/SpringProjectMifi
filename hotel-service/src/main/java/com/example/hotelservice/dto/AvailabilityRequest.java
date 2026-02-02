@@ -7,16 +7,16 @@ public class AvailabilityRequest {
     private LocalDate endDate;
     private String requestId;
 
+    public AvailabilityRequest() {
+    }
+
     public AvailabilityRequest(LocalDate startDate, LocalDate endDate, String requestId) {
         this.startDate = startDate;
         this.endDate = endDate;
         this.requestId = requestId;
     }
 
-    public AvailabilityRequest() {
-
-    }
-
+    // --- Getters ---
     public LocalDate getStartDate() {
         return startDate;
     }
@@ -27,5 +27,18 @@ public class AvailabilityRequest {
 
     public LocalDate getEndDate() {
         return endDate;
+    }
+
+    // --- Setters (добавляем то, чего не хватало) ---
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }
