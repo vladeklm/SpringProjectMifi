@@ -28,8 +28,7 @@ public class RoomService {
         this.hotelRepository = hotelRepository;
     }
 
-    // ... остальные методы (confirmAvailability, releaseRoom, getAvailableRooms) остаются без изменений ...
-    // ... (копируем их сюда, если вы переписываете файл полностью, иначе просто добавьте метод ниже)
+
 
     @Transactional
     public Room saveRoom(CreateRoomDto dto) {

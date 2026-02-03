@@ -57,4 +57,8 @@ public class Booking {
     public String getRequestId() {
         return requestId;
     }
+
+    public void setId(long l) {
+        this.id = l;
+    }
 }

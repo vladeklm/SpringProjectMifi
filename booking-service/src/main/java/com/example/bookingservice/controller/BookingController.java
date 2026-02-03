@@ -34,9 +34,10 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<Booking> createBooking(
             @RequestBody BookingRequestDto dto,
-            @RequestHeader("Authorization") String token, // Захватываем токен из заголовка
-            Authentication auth) {
-        Booking booking = bookingService.createBooking(dto, token, auth.getName());
+            Authentication auth) { // УБРАЛИ @RequestHeader("Authorization") String token
+
+        // Передаем только DTO и имя пользователя
+        Booking booking = bookingService.createBooking(dto, auth.getName());
         return ResponseEntity.ok(booking);
     }
 
@@ -75,9 +76,10 @@ public class BookingController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelBooking(
             @PathVariable Long id,
-            @RequestHeader("Authorization") String token, // Захватываем токен из заголовка
-            Authentication auth) {
-        bookingService.cancelBooking(id, token, auth.getName());
+            Authentication auth) { // УБРАЛИ @RequestHeader("Authorization") String token
+
+        // Передаем только ID и имя пользователя
+        bookingService.cancelBooking(id, auth.getName());
         return ResponseEntity.ok().build();
     }
 }
