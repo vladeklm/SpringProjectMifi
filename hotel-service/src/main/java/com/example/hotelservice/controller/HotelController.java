@@ -40,8 +40,7 @@ public class HotelController {
         // Если в RoomService происходит ошибка, она вылетит сюда (500)
         boolean result = roomService.confirmAvailability(id, req.getStartDate(), req.getEndDate(), req.getRequestId());
 
-        // Явно возвращаем true, если все ок
-        return ResponseEntity.ok(true);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/rooms/{id}/release")
